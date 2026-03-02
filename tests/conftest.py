@@ -1,9 +1,14 @@
 import importlib
 import inspect
 import pkgutil
+from collections.abc import Callable
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+import allure
 import pytest
+
+type AssignmentFinder = Callable[[], type[Assignment]]
 
 
 @runtime_checkable
@@ -63,9 +68,24 @@ def student(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture(scope="module")
-def assignment(student: str, topic: str, all_assignments: list[type[Assignment]]) -> type[Assignment]:
-    res = list(filter(lambda t: t.get_student() == student and t.get_topic() == topic, all_assignments))
-    assert len(res) <= 1
-    if not res:
-        pytest.skip("Assignment not found")
-    return res[0]
+def assignment_finder(student: str, topic: str, all_assignments: list[type[Assignment]]) -> AssignmentFinder:
+    filter_assignment = list(filter(lambda t: t.get_student() == student and t.get_topic() == topic, all_assignments))
+
+    def get_assignment() -> type[Assignment]:
+        allure.dynamic.label("topic", topic)
+        allure.dynamic.label("student", student)
+
+        assert len(filter_assignment) <= 1
+        if not filter_assignment:
+            pytest.skip("Assignment not found")
+
+        path = Path(inspect.getfile(filter_assignment[0])).relative_to(Path.cwd())
+        allure.attach.file(path, path.name, "text/python", path.suffix)
+        allure.dynamic.link(
+            f"https://github.com/istupakov/nstu-practice-spring-2026/blob/main/{path.as_posix()}",
+            name=f"Source code ({path.as_posix()})",
+        )
+
+        return filter_assignment[0]
+
+    return get_assignment

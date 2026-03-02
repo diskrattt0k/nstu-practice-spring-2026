@@ -1,0 +1,7 @@
+name: NSTU Practice Spring 2026
+plugins:
+  awesome:
+    options:
+      groupBy:
+        - topic
+        - student
