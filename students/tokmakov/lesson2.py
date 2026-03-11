@@ -84,4 +84,3 @@ class Exercise:
             grad_w, grad_b = model.grad(x, y)
             model.weights -= lr * grad_w
             model.bias -= lr * grad_b
-   
