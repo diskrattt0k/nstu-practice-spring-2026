@@ -13,21 +13,20 @@ class LinearRegression:
         return x @ self.weights + self.bias
 
     def loss(self, x: np.ndarray, y: np.ndarray) -> float:
-        n = len(x)
-        return (np.sum(np.square(y - self.predict(x)))) / n
+        pred = self.predict(x)
+        mse = np.mean((pred - y) ** 2)
+        return float(mse)
 
     def metric(self, x: np.ndarray, y: np.ndarray) -> float:
-        return 1 - np.sum(np.square(y - self.predict(x))) / np.sum(np.square(y - np.mean(y)))
+        pred = self.predict(x)
+        return float(1 - (np.sum((y - pred) ** 2) / np.sum((y - np.mean(y)) ** 2)))
 
     def grad(self, x, y) -> tuple[np.ndarray, np.ndarray]:
+        pred = self.predict(x)
         n = len(x)
-        predictions = self.predict(x)
-        errors = y - predictions
-        grad_w = (-2 / n) * x.T @ errors
-        grad_b = (-2 / n) * np.sum(errors)
-        grad_b = np.array(grad_b)
-
-        return grad_w, grad_b
+        dw = -2 / n * (x.T @ (y - pred))
+        db = -2 / n * np.sum(y - pred)
+        return dw, db
 
 
 class LogisticRegression:
@@ -43,28 +42,25 @@ class LogisticRegression:
         return 1 / (1 + np.exp(-z))
 
     def loss(self, x: np.ndarray, y: np.ndarray) -> float:
-        eps = 1e-15
-        p = np.clip(self.predict(x), eps, 1 - eps)
-        losses = -(y * np.log(p) + (1 - y) * np.log(1 - p))
-        return float(np.mean(losses))
+        pred = self.predict(x)
+        return float(np.mean(-y * np.log(pred) - (1 - y) * np.log(1 - pred)))
 
     def metric(self, x: np.ndarray, y: np.ndarray) -> float:
-        p = self.predict(x)
-        predictions = p >= 0.5
-        return float(np.mean(predictions == y))
+        pred = self.predict(x)
+        return np.mean((pred >= 0.5).astype(int) == y)
 
     def grad(self, x, y) -> tuple[np.ndarray, np.ndarray]:
-        n = x.shape[0]
-        p = self.predict(x)
-        grad_w = (1 / n) * x.T @ (p - y)
-        grad_b = (1 / n) * np.sum(p - y)
-        return grad_w, np.array(grad_b)
+        pred = self.predict(x)
+        n = len(x)
+        dw = (1 / n) * (x.T @ (pred - y))
+        db = (1 / n) * np.sum(pred - y)
+        return dw, db
 
 
 class Exercise:
     @staticmethod
     def get_student() -> str:
-        return "Токмаков Дмитрий Евгеньевич, ПМ-31"
+        return "Миллер Игорь Владиславович, ПМ-31"
 
     @staticmethod
     def get_topic() -> str:
@@ -72,18 +68,15 @@ class Exercise:
 
     @staticmethod
     def create_linear_model(num_features: int, rng: np.random.Generator | None = None) -> LinearRegression:
-        return LinearRegression(num_features, rng=rng or np.random.default_rng())
+        return LinearRegression(num_features, rng or np.random.default_rng())
 
     @staticmethod
     def create_logistic_model(num_features: int, rng: np.random.Generator | None = None) -> LogisticRegression:
-        return LogisticRegression(num_features, rng=rng or np.random.default_rng())
+        return LogisticRegression(num_features, rng or np.random.default_rng())
 
     @staticmethod
-    def fit(
-    model: LinearRegression | LogisticRegression, x: np.ndarray, y: np.ndarray, lr: float, n_iter: int
-) -> None:
-        for _ in range(n_iter):
-            grad_w, grad_b = model.grad(x, y)
-            model.weights -= lr * grad_w
-            model.bias -= lr * grad_b
-   
+    def fit(model: LinearRegression | LogisticRegression, x: np.ndarray, y: np.ndarray, lr: float, n_iter: int) -> None:
+        for _iteration in range(n_iter):
+            dw, db = model.grad(x, y)
+            model.weights -= lr * dw
+            model.bias -= lr * db
