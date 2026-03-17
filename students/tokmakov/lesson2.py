@@ -79,6 +79,7 @@ class Exercise:
         return LogisticRegression(num_features, rng=rng or np.random.default_rng())
 
     @staticmethod
+
     def fit(
             model: LinearRegression | LogisticRegression,
             x: np.ndarray,
