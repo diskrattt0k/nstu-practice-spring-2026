@@ -79,25 +79,23 @@ class Exercise:
         return LogisticRegression(num_features, rng=rng or np.random.default_rng())
 
     @staticmethod
-
     def fit(
-            model: LinearRegression | LogisticRegression,
-            x: np.ndarray,
-            y: np.ndarray,
-            lr: float,
-            n_iter: int,
-            batch_size: int
+        model: LinearRegression | LogisticRegression,
+        x: np.ndarray,
+        y: np.ndarray,
+        lr: float,
+        n_iter: int,
+        batch_size: int,
     ) -> None:
         n = x.shape[0]
-
 
         for _ in range(n_iter):
             indexes = np.random.permutation(n)
             x_shuffll = x[indexes]
             y_shuffll = y[indexes]
-            for i in range(0,n,batch_size):
-                x_batch = x_shuffll[i:i+batch_size]
-                y_batch = y_shuffll[i:i+batch_size]
+            for i in range(0, n, batch_size):
+                x_batch = x_shuffll[i : i + batch_size]
+                y_batch = y_shuffll[i : i + batch_size]
                 grad_w, grad_b = model.grad(x_batch, y_batch)
 
                 model.weights -= lr * grad_w
