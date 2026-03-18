@@ -85,23 +85,28 @@ class Exercise:
         y: np.ndarray,
         lr: float,
         n_iter: int,
-        batch_size: int,
+        batch_size: int | None = None,
     ) -> None:
         n = x.shape[0]
+        if batch_size is None:
+            batch_size = n
 
         for _ in range(n_iter):
-            indexes = np.random.permutation(n)
-            x_shuffll = x[indexes]
-            y_shuffll = y[indexes]
-            for i in range(0, n, batch_size):
-                x_batch = x_shuffll[i : i + batch_size]
-                y_batch = y_shuffll[i : i + batch_size]
-                grad_w, grad_b = model.grad(x_batch, y_batch)
+            if batch_size < n:
+                indices = np.random.permutation(n)
+                x_shuffl = x[indices]
+                y_shuffl = y[indices]
+            else:
+                x_shuffl = x
+                y_shuffl = y
 
+            for i in range(0, n, batch_size):
+                x_batch = x_shuffl[i : i + batch_size]
+                y_batch = y_shuffl[i : i + batch_size]
+                grad_w, grad_b = model.grad(x_batch, y_batch)
                 model.weights -= lr * grad_w
                 model.bias -= lr * grad_b
 
     @staticmethod
     def get_iris_hyperparameters() -> dict[str, int | float]:
-        # Для 5-10 эпох, по метрике AUROC
-        return {"lr": 0.1, "batch_size": 2}
+        return {"lr": 0.1, "batch_size": 32}
