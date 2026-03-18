@@ -92,17 +92,10 @@ class Exercise:
             batch_size = n
 
         for _ in range(n_iter):
-            if batch_size < n:
-                indices = np.random.permutation(n)
-                x_shuffl = x[indices]
-                y_shuffl = y[indices]
-            else:
-                x_shuffl = x
-                y_shuffl = y
-
             for i in range(0, n, batch_size):
-                x_batch = x_shuffl[i : i + batch_size]
-                y_batch = y_shuffl[i : i + batch_size]
+                x_batch = x[i : i + batch_size]
+                y_batch = y[i : i + batch_size]
+
                 grad_w, grad_b = model.grad(x_batch, y_batch)
                 model.weights -= lr * grad_w
                 model.bias -= lr * grad_b
