@@ -109,7 +109,6 @@ class Exercise:
         n_iter: int,
         batch_size: int | None = None,
     ) -> None:
-
         if batch_size is None:
             batch_size = int(x.shape[0])
 
@@ -124,7 +123,3 @@ class Exercise:
     @staticmethod
     def get_iris_hyperparameters() -> dict[str, int | float]:
         return {"lr": 0.08, "batch_size": 32}
-<<<<<<< HEAD
-
-=======
->>>>>>> aa771b1 (change lesson 2 for tests)
