@@ -123,3 +123,4 @@ class Exercise:
     @staticmethod
     def get_iris_hyperparameters() -> dict[str, int | float]:
         return {"lr": 0.08, "batch_size": 32}
+        
