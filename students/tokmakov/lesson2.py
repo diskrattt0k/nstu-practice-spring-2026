@@ -110,16 +110,16 @@ class Exercise:
         batch_size: int | None = None,
     ) -> None:
         if batch_size is None:
-            batch_size = x.shape[0]
+            batch_size = int(x.shape[0])
 
         for _ in range(n_iter):
-            for i in range(0, x.shape[0], batch_size):
-                x_batch = x[i : i + batch_size]
-                y_batch = y[i : i + batch_size]
+            for i in range(x.shape[0] // batch_size):
+                x_batch = x[i * batch_size : (i + 1) * batch_size]
+                y_batch = y[i * batch_size : (i + 1) * batch_size]
                 dw, db = model.grad(x_batch, y_batch)
                 model.weights -= lr * dw
                 model.bias -= lr * db
 
-@staticmethod
-def get_iris_hyperparameters() -> dict[str, int | float]:
-    return {"lr": 0.08, "batch_size": 32}
+    @staticmethod
+    def get_iris_hyperparameters() -> dict[str, int | float]:
+        return {"lr": 0.08, "batch_size": 32}
