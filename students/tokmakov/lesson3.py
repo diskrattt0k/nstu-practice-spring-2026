@@ -190,10 +190,8 @@ class NLLLoss:
 
     def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         batch_size = x.shape[0]
-
         self._grad = np.zeros_like(x)
         self._grad[np.arange(batch_size), y] = -1 / batch_size
-
         return -np.mean(x[np.arange(batch_size), y])
 
     def backward(self) -> np.ndarray:
@@ -207,7 +205,6 @@ class CrossEntropyLoss:
 
     def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         self._y = y
-
         x_max = np.max(x, axis=-1, keepdims=True)
         shifted = x - x_max
         log_sum_exp = np.log(np.sum(np.exp(shifted), axis=-1, keepdims=True))
@@ -216,15 +213,12 @@ class CrossEntropyLoss:
         batch_size = x.shape[0]
         hot_y = np.zeros_like(x)
         hot_y[np.arange(batch_size), y] = 1
-
         return -np.sum(self._logprobs * hot_y) / batch_size
 
     def backward(self) -> np.ndarray:
         batch_size = self._logprobs.shape[0]
-
         hot_y = np.zeros_like(self._logprobs)
         hot_y[np.arange(batch_size), self._y] = 1
-
         return (np.exp(self._logprobs) - hot_y) / batch_size
 
 
