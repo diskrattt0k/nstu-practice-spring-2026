@@ -16,6 +16,12 @@ class Layer(Protocol):
     def grad(self) -> Sequence[np.ndarray]: ...
 
 
+class Loss(Protocol):
+    def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray: ...
+
+    def backward(self) -> np.ndarray: ...
+
+
 class LinearLayer:
     def __init__(
         self,
@@ -42,7 +48,6 @@ class LinearLayer:
         dx = dy @ self.weights
         self._weights_grad = dy.T @ self._x
         self._bias_grad = np.sum(dy, axis=0)
-
         return dx
 
     @property
@@ -104,7 +109,6 @@ class LogSoftmaxLayer:
         shifted = x - x_max
         exp_shifted = np.exp(shifted)
         log_sum_exp = np.log(np.sum(exp_shifted, axis=self.axis, keepdims=True))
-
         out = shifted - log_sum_exp
         self._softmax = np.exp(out)
         return out
@@ -151,6 +155,79 @@ class Model:
         return grads
 
 
+class MSELoss:
+    def __init__(self) -> None:
+        self._x: np.ndarray = np.empty(0, dtype=np.float32)
+        self._y: np.ndarray = np.empty(0, dtype=np.float32)
+
+    def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        self._x = x
+        self._y = y
+        return np.mean((x - y) ** 2)
+
+    def backward(self) -> np.ndarray:
+        return 2 * (self._x - self._y) / self._x.size
+
+
+class BCELoss:
+    def __init__(self) -> None:
+        self._x: np.ndarray = np.empty(0, dtype=np.float32)
+        self._y: np.ndarray = np.empty(0, dtype=np.float32)
+
+    def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        self._x = x
+        self._y = y
+        return -np.mean(y * np.log(x) + (1 - y) * np.log(1 - x))
+
+    def backward(self) -> np.ndarray:
+        batch_size = self._x.shape[0]
+        return (self._x - self._y) / (self._x * (1 - self._x)) / batch_size
+
+
+class NLLLoss:
+    def __init__(self) -> None:
+        self._grad: np.ndarray = np.empty(0, dtype=np.float32)
+
+    def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        batch_size = x.shape[0]
+
+        self._grad = np.zeros_like(x)
+        self._grad[np.arange(batch_size), y] = -1 / batch_size
+
+        return -np.mean(x[np.arange(batch_size), y])
+
+    def backward(self) -> np.ndarray:
+        return self._grad
+
+
+class CrossEntropyLoss:
+    def __init__(self) -> None:
+        self._logprobs: np.ndarray = np.empty(0, dtype=np.float32)
+        self._y: np.ndarray = np.empty(0, dtype=np.int64)
+
+    def forward(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        self._y = y
+
+        x_max = np.max(x, axis=-1, keepdims=True)
+        shifted = x - x_max
+        log_sum_exp = np.log(np.sum(np.exp(shifted), axis=-1, keepdims=True))
+        self._logprobs = shifted - log_sum_exp
+
+        batch_size = x.shape[0]
+        hot_y = np.zeros_like(x)
+        hot_y[np.arange(batch_size), y] = 1
+
+        return -np.sum(self._logprobs * hot_y) / batch_size
+
+    def backward(self) -> np.ndarray:
+        batch_size = self._logprobs.shape[0]
+
+        hot_y = np.zeros_like(self._logprobs)
+        hot_y[np.arange(batch_size), self._y] = 1
+
+        return (np.exp(self._logprobs) - hot_y) / batch_size
+
+
 class Exercise:
     @staticmethod
     def get_student() -> str:
@@ -183,3 +260,42 @@ class Exercise:
     @staticmethod
     def create_model(*layers: Layer) -> Layer:
         return Model(*layers)
+
+    @staticmethod
+    def create_mse_loss() -> Loss:
+        return MSELoss()
+
+    @staticmethod
+    def create_bce_loss() -> Loss:
+        return BCELoss()
+
+    @staticmethod
+    def create_nll_loss() -> Loss:
+        return NLLLoss()
+
+    @staticmethod
+    def create_cross_entropy_loss() -> Loss:
+        return CrossEntropyLoss()
+
+    @staticmethod
+    def train_model(
+        model: Layer,
+        loss: Loss,
+        x: np.ndarray,
+        y: np.ndarray,
+        lr: float,
+        n_epoch: int,
+        batch_size: int,
+    ) -> None:
+        idx = np.arange(batch_size, x.shape[0], batch_size)
+
+        for _ in range(n_epoch):
+            x_batches = np.split(x, idx, axis=0)
+            y_batches = np.split(y, idx, axis=0)
+
+            for x_batch, y_batch in zip(x_batches, y_batches, strict=True):
+                loss.forward(model.forward(x_batch), y_batch)
+                model.backward(loss.backward())
+
+                for p, g in zip(model.parameters, model.grad, strict=True):
+                    p += -lr * g
